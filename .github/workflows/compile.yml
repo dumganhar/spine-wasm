@@ -1,0 +1,130 @@
+name: Compile Emscripten Library
+
+on:
+  workflow_dispatch:
+    inputs:
+      engine_ref:
+        description: 'cocos-engine branch'
+        type: string
+        default: 'develop'
+        required: true
+  release:
+    types: [published]
+
+# github.head_ref is only defined on pull_request events
+concurrency:
+  group: ${{ github.workflow }}-${{ github.actor }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  compile:
+    name: "Emscripten"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+
+      - name: Release check cocos branch
+        if: github.event_name == 'release'
+        uses: jannekem/run-python-script-action@v1
+        with:
+          script: |
+            import os
+            import re
+            import sys
+            pattern = r'ref:\s*(.+)'
+            result=re.findall(pattern, "Release ref:v3.8.2")
+            if len(result) < 1:
+                sys.exit(-1)
+            print("Ref: " + result[0])
+            env_file = os.getenv('GITHUB_ENV')
+            with open(env_file, "a") as f:
+                f.write("COCOS_ENGINE_REF=" + result[0] + "\n")
+
+      - name: Release check cocos branch
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "COCOS_ENGINE_REF=${{ github.event.inputs.engine_ref }}" >> $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "${{ env.COCOS_ENGINE_REF }}"
+
+      - name: Checkout cocos-engine repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          ref: ${{ env.COCOS_ENGINE_REF }}
+          repository: cocos/cocos-engine
+          path: .
+
+      - name: Setup emsdk
+        uses: dumganhar/setup-emsdk@997d2cde2deabda085a11f98e86e842915b0e846
+        with:
+          version: 3.1.41
+          actions-cache-folder: 'emsdk-cache'
+
+      - name: Verify
+        run: |
+          which emcc
+          emcc -v
+          which emcmake
+          which emmake
+
+      - name: Install ninja
+        run: |
+          if ! command -v ninja &> /dev/null; then
+              echo "Ninja not found, installing..."
+              # sudo apt update
+              sudo apt install ninja-build
+          else
+              echo "Ninja is already installed."
+          fi
+          which ninja
+
+      - name: Apply patch
+        run: |
+          cp -f ./patch/CMakeLists.txt ./native/cocos/editor-support/spine-wasm
+
+      - name: Compile
+        run: |
+          cd native/cocos/editor-support/spine-wasm
+          mkdir build
+          mkdir dist
+          cd build
+          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
+          core_count=$(nproc)
+          echo "CPU core count：$core_count"
+          emmake make -j${core_count}
+          cp libspine_static.a ../dist
+          echo "============== Compile Successfully! =============="
+
+      - name: Upload Artifact
+        if: github.event_name != 'release'
+        uses: actions/upload-artifact@v3
+        with: 
+          name: spine
+          path: native/cocos/editor-support/spine-wasm/dist
+
+      - name: Pack dist files
+        if: github.event_name == 'release'
+        uses: thedoctor0/zip-release@a24011d8d445e4da5935a7e73c1f98e22a439464
+        with:
+          type: 'zip'
+          directory: 'native/cocos/editor-support/spine-wasm/dist'
+          path: '.'
+          filename: 'spine.zip'
+
+      - name: Show Files in builds directory
+        if: github.event_name == 'release'
+        run: |
+          ls -l native/cocos/editor-support/spine-wasm/dist
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: svenstaro/upload-release-action@1beeb572c19a9242f4361f4cee78f8e0d9aec5df
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: native/cocos/editor-support/spine-wasm/dist/spine.zip
+          asset_name: spine.zip
+          tag: ${{ github.ref }}
