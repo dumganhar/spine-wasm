@@ -119,10 +119,10 @@ jobs:
           path: '.'
           filename: 'spine.zip'
 
-      - name: Show Files in builds directory
+      - name: Show Files in dist directory
         if: github.event_name == 'release'
         run: |
-          ls -l native/cocos/editor-support/spine-wasm/dist
+          ls -l ./cocos-engine/native/cocos/editor-support/spine-wasm/dist
 
       - name: Upload to Release
         if: github.event_name == 'release'
