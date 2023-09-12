@@ -34,7 +34,7 @@ jobs:
             import os
             import re
             import sys
-            pattern = r'[R|r]elease:*\s*(.+)'
+            pattern = r'[R|r]elease:*\s*([^\s-]+)'
             result=re.findall(pattern, "${{ github.event.release.name }}")
             if len(result) < 1:
                 sys.exit(-1)
