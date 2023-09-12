@@ -24,6 +24,8 @@ jobs:
       contents: write
     steps:
 
+      - uses: actions/checkout@v3
+
       - name: Release check cocos branch
         if: github.event_name == 'release'
         uses: jannekem/run-python-script-action@v1
@@ -71,16 +73,16 @@ jobs:
           which emcmake
           which emmake
 
-      - name: Install ninja
-        run: |
-          if ! command -v ninja &> /dev/null; then
-              echo "Ninja not found, installing..."
-              # sudo apt update
-              sudo apt install ninja-build
-          else
-              echo "Ninja is already installed."
-          fi
-          which ninja
+      # - name: Install ninja
+      #   run: |
+      #     if ! command -v ninja &> /dev/null; then
+      #         echo "Ninja not found, installing..."
+      #         # sudo apt update
+      #         sudo apt install ninja-build
+      #     else
+      #         echo "Ninja is already installed."
+      #     fi
+      #     which ninja
 
       - name: Apply patch
         run: |
