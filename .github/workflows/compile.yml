@@ -34,8 +34,8 @@ jobs:
             import os
             import re
             import sys
-            pattern = r'ref:\s*(.+)'
-            result=re.findall(pattern, "Release ref:v3.8.2")
+            pattern = r'(.+)-r\d+'
+            result=re.findall(pattern, "${{ github.event.release.name }}")
             if len(result) < 1:
                 sys.exit(-1)
             print("Ref: " + result[0])
