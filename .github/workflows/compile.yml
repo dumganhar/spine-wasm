@@ -86,6 +86,8 @@ jobs:
 
       - name: Apply patch
         run: |
+          pwd
+          ls -l
           cp -f ./patch/CMakeLists.txt ./native/cocos/editor-support/spine-wasm
 
       - name: Compile
