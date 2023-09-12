@@ -34,7 +34,7 @@ jobs:
             import os
             import re
             import sys
-            pattern = r'(.+)-r\d+'
+            pattern = r'[R|r]elease:*\s*(.+)'
             result=re.findall(pattern, "${{ github.event.release.name }}")
             if len(result) < 1:
                 sys.exit(-1)
@@ -43,7 +43,7 @@ jobs:
             with open(env_file, "a") as f:
                 f.write("COCOS_ENGINE_REF=" + result[0] + "\n")
 
-      - name: Release check cocos branch
+      - name: Check cocos branch for workflow_dispatch
         if: github.event_name == 'workflow_dispatch'
         run: |
           echo "COCOS_ENGINE_REF=${{ github.event.inputs.engine_ref }}" >> $GITHUB_ENV
