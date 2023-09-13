@@ -107,7 +107,7 @@ jobs:
         if: github.event_name != 'release'
         uses: actions/upload-artifact@v3
         with: 
-          name: spine.zip
+          name: spine
           path: ./cocos-engine/native/cocos/editor-support/spine-wasm/dist
 
       - name: Pack dist files
